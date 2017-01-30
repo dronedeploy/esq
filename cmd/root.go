@@ -24,6 +24,7 @@ import (
 )
 
 var cfgFile string
+var verbose bool
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -57,12 +58,13 @@ func init() {
 	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.esq.yaml)")
+	RootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "enable for extra logs")
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	//RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-// initConfig reads in config file and ENV variables if set.
+// initConfig reads in config file and flags if set.
 func initConfig() {
     var validFile = regexp.MustCompile(`^.*\.yml$`)
 
@@ -83,4 +85,8 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Unable to read config file:", viper.ConfigFileUsed())
 	}
+}
+
+func validateFlags() {
+    //TODO all the flags
 }
