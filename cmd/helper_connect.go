@@ -21,6 +21,8 @@
 package cmd
 
 import (
+	"bufio"
+
 	"context"
 	"fmt"
 	"os"
@@ -35,12 +37,50 @@ import (
 	"time"
 
 	"golang.org/x/sync/errgroup"
-	//"gopkg.in/cheggaaa/pb.v1"
+	"gopkg.in/cheggaaa/pb.v1"
 	"log"
 )
 
-func connection(q []string) {
+func connection(q []string, stream string) {
 
+	client := initClient()
+	hits := make(chan json.RawMessage)
+	g, ctx := errgroup.WithContext(context.Background())
+
+	if stream == "stdout" {
+		fetchRecords(client, q, hits, g, ctx)
+		printRecords(hits, g, ctx)
+
+		// Check whether any goroutines failed.
+		if err := g.Wait(); err != nil {
+			panic(err)
+		}
+
+	} else {
+		// Count total and setup progress
+		fmt.Println("Status bar is approximate")
+		total, err := client.Count().
+			Index(viper.GetString("index")).
+			Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
+			Do(context.Background())
+		if err != nil {
+			panic(err)
+		}
+		bar := pb.StartNew(int(total))
+
+		fetchRecords(client, q, hits, g, ctx)
+		writeRecords(stream, hits, g, ctx, bar)
+
+		// Check whether any goroutines failed.
+		if err := g.Wait(); err != nil {
+			panic(err)
+		}
+
+		bar.FinishPrint("Done")
+	}
+}
+
+func initClient() *elastic.Client {
 	url := viper.GetString("url")
 	options := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
@@ -56,7 +96,7 @@ func connection(q []string) {
 
 	if verbose {
 		options = append(options,
-			elastic.SetTraceLog(log.New(os.Stderr, "ELASTIC ", log.LstdFlags)))
+			elastic.SetTraceLog(log.New(os.Stderr, "FETCH ", log.LstdFlags)))
 	}
 
 	client, err := elastic.NewClient(options...)
@@ -64,48 +104,17 @@ func connection(q []string) {
 		log.Fatalf("Could not connect Elasticsearch client to %s: %s.", url, err)
 	}
 
-	//result, _ := client.Search().
-	//    Index(viper.GetString("index")).
-	//    Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
-	//    Sort(viper.GetString("timestamp"), false).
-	//    From(0).
-	//    Size(1).
-	//    Do(context.Background())
-	//fmt.Printf("Query took %d milliseconds\n", result.TookInMillis)
-
-	// Count total and setup progress
-	total, err := client.Count().
-		Index(viper.GetString("index")).
-		Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
-		Do(context.Background())
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("records: %d\n", total)
-	//bar := pb.StartNew(int(total))
-
-	hits := make(chan json.RawMessage)
-	g, ctx := errgroup.WithContext(context.Background())
-	scroll(client, q, hits, g, ctx)
-	processRecords(hits, g, ctx)
-
-	// Check whether any goroutines failed.
-	if err := g.Wait(); err != nil {
-		panic(err)
-	}
-
-	// Done.
-	//bar.FinishPrint("Done")
+	return client
 }
 
-func scroll(client *elastic.Client, q []string, hits chan json.RawMessage, g *errgroup.Group, ctx context.Context) error {
+func fetchRecords(client *elastic.Client, q []string, hits chan json.RawMessage, g *errgroup.Group, ctx context.Context) error {
 	g.Go(func() error {
 		defer close(hits)
 		// Initialize scroller. Just don't call Do yet.
 		scroll := client.Scroll().
 			Index(viper.GetString("index")).
 			Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
-			Sort(viper.GetString("timestamp"), false).
+			Sort(viper.GetString("timestamp"), true).
 			Size(1000)
 
 		for {
@@ -133,24 +142,63 @@ func scroll(client *elastic.Client, q []string, hits chan json.RawMessage, g *er
 	return nil
 }
 
-func processRecords(hits chan json.RawMessage, g *errgroup.Group, ctx context.Context) error {
+func printRecords(hits chan json.RawMessage, g *errgroup.Group, ctx context.Context) error {
 	g.Go(func() error {
 		for hit := range hits {
 			var l map[string]interface{}
 			err := json.Unmarshal(hit, &l)
 			if err != nil {
-				// Deserialization failed
+				continue // Deserialization failed
 			}
 			fmt.Printf("%s", l["log"])
 
+			// Terminate early?
+			select {
+			default:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 		return nil
 	})
-	// Terminate early?
-	select {
-	default:
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+	return nil
+}
+
+func writeRecords(filename string, hits chan json.RawMessage, g *errgroup.Group, ctx context.Context, bar *pb.ProgressBar) error {
+	g.Go(func() error {
+		f, err := os.Create(filename)
+		if err != nil {
+			fmt.Println("error writing to file")
+			return err
+		}
+		defer f.Close()
+
+		w := bufio.NewWriter(f)
+		defer w.Flush()
+
+		for hit := range hits {
+			var l map[string]interface{}
+			err := json.Unmarshal(hit, &l)
+			if err != nil {
+				continue // Deserialization failed
+			}
+			_, err = w.WriteString(l["log"].(string))
+			if err != nil {
+				fmt.Println("error writing to file")
+				break
+			}
+
+			bar.Increment()
+
+			// Terminate early?
+			select {
+			default:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+
+		return nil
+	})
 	return nil
 }
