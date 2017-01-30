@@ -26,23 +26,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var stream string
-
-// getCmd represents the get command
-var getCmd = &cobra.Command{
-	Use:   "get",
-	Short: "Get elasticsearch records",
-	Long: `Execute a query on elasticsearch.
-
-Note: Don't forget to escape special characters (e.g. *, $, ", and ') with \ where needed`,
+// podlogCmd represents the podlog command
+var podlogCmd = &cobra.Command{
+	Use:   "podlog",
+	Short: "a shorthand for getting kubernetes pod logs",
+	Long: `
+A shortcut for getting log streams for kubernetes pods.
+Requres that your pods have a field called 'kubernetes.pod'`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Search query: %v\n", args)
-		connection(args, stream)
+		q := make([]string, 1)
+		q[0] = "kubernetes.pod:'" + args[0] + "'"
+		connection(q, stream)
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(getCmd)
-
-	getCmd.PersistentFlags().StringVar(&stream, "file", "stdout", "optional output file")
+	getCmd.AddCommand(podlogCmd)
 }

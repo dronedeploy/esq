@@ -63,15 +63,13 @@ func init() {
 
 	configCmd.Flags().StringP("index", "i", "logstash-*", "Index to query")
 	viper.BindPFlag("index", configCmd.Flags().Lookup("index"))
+
+	configCmd.Flags().StringP("fields", "f", "message", "Comma dilimited list of fields to query by default")
+	viper.BindPFlag("fields", configCmd.Flags().Lookup("fields"))
 }
 
 func writeConfig() {
 	//configFilePath := os.Getenv("HOME") + "/.esq.yml"
-
-	//// If a config file is found, read it in.
-	//if err := viper.ReadInConfig(); err != nil {
-	//    fmt.Println("Unable to load config file:", viper.ConfigFileUsed())
-	//}
 
 	var C config
 
@@ -96,4 +94,5 @@ type config struct {
 	Password  string
 	Timestamp string
 	Index     string
+	Fields    string
 }
