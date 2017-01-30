@@ -19,7 +19,7 @@ After that you should see `esq` in `$GOPATH/bin`.
 
 #### Install Using Hombrew (OSX)
 
-To install `esq` using homebrew type in run the following:
+To install `esq` using homebrew run the following:
 
 `brew tap astropuffin/tap`
 
