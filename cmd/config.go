@@ -22,12 +22,12 @@ package cmd
 
 import (
 	"fmt"
-    "os"
-    "io/ioutil"
+	"io/ioutil"
+	"os"
 
 	"github.com/spf13/cobra"
-    "github.com/spf13/viper"
-    "gopkg.in/yaml.v2"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 // configCmd represents the config command
@@ -40,7 +40,7 @@ You can overwrite a subset of the config by providing only the flags you want to
 
 The config file must be located at: ` + os.Getenv("HOME") + `/.esq.yml`,
 	Run: func(cmd *cobra.Command, args []string) {
-        writeConfig()
+		writeConfig()
 
 	},
 }
@@ -49,51 +49,51 @@ func init() {
 	RootCmd.AddCommand(configCmd)
 
 	// Local flags which will only run when this command is called
-    configCmd.Flags().String("url", "http://127.0.0.1:9200", "Elasticsearch url, with protocol and port specified")
-    viper.BindPFlag("url", configCmd.Flags().Lookup("url"))
+	configCmd.Flags().String("url", "http://127.0.0.1:9200", "Elasticsearch url, with protocol and port specified")
+	viper.BindPFlag("url", configCmd.Flags().Lookup("url"))
 
-    configCmd.Flags().StringP("user", "u", "", "Username for http basic auth.")
-    viper.BindPFlag("username", configCmd.Flags().Lookup("user"))
+	configCmd.Flags().StringP("user", "u", "", "Username for http basic auth.")
+	viper.BindPFlag("username", configCmd.Flags().Lookup("user"))
 
-    configCmd.Flags().StringP("password", "p", "", "Password for http basic auth.")
-    viper.BindPFlag("password", configCmd.Flags().Lookup("password"))
+	configCmd.Flags().StringP("password", "p", "", "Password for http basic auth.")
+	viper.BindPFlag("password", configCmd.Flags().Lookup("password"))
 
-    configCmd.Flags().StringP("timestamp", "t", "@timestamp", "Timestamp field name used for sorting entries")
-    viper.BindPFlag("timestamp", configCmd.Flags().Lookup("timestamp"))
+	configCmd.Flags().StringP("timestamp", "t", "@timestamp", "Timestamp field name used for sorting entries")
+	viper.BindPFlag("timestamp", configCmd.Flags().Lookup("timestamp"))
 
-    configCmd.Flags().StringP("index", "i", "logstash-*", "Index to query")
-    viper.BindPFlag("index", configCmd.Flags().Lookup("index"))
+	configCmd.Flags().StringP("index", "i", "logstash-*", "Index to query")
+	viper.BindPFlag("index", configCmd.Flags().Lookup("index"))
 }
 
 func writeConfig() {
-    //configFilePath := os.Getenv("HOME") + "/.esq.yml"
+	//configFilePath := os.Getenv("HOME") + "/.esq.yml"
 
-    //// If a config file is found, read it in.
-    //if err := viper.ReadInConfig(); err != nil {
-    //    fmt.Println("Unable to load config file:", viper.ConfigFileUsed())
-    //}
+	//// If a config file is found, read it in.
+	//if err := viper.ReadInConfig(); err != nil {
+	//    fmt.Println("Unable to load config file:", viper.ConfigFileUsed())
+	//}
 
-    var C config
+	var C config
 
-    err := viper.Unmarshal(&C)
-    if err != nil {
-        fmt.Println("unable to decode into struct, %v", err)
-    }
+	err := viper.Unmarshal(&C)
+	if err != nil {
+		fmt.Println("unable to decode into struct, %v", err)
+	}
 
-    cfgFile, err := yaml.Marshal(&C)
-    if err != nil {
-       fmt.Println("error: %v", err)
-    }
+	cfgFile, err := yaml.Marshal(&C)
+	if err != nil {
+		fmt.Println("error: %v", err)
+	}
 
-    configFilePath := viper.ConfigFileUsed()
-    fmt.Println("writing config to " + configFilePath)
-    err = ioutil.WriteFile(configFilePath, cfgFile, 0600)
+	configFilePath := viper.ConfigFileUsed()
+	fmt.Println("writing config to " + configFilePath)
+	err = ioutil.WriteFile(configFilePath, cfgFile, 0600)
 }
 
 type config struct {
-    Url string
-    Username string
-    Password string
-    Timestamp string
-    Index string
+	Url       string
+	Username  string
+	Password  string
+	Timestamp string
+	Index     string
 }

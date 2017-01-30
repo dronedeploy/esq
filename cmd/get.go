@@ -23,9 +23,7 @@ package cmd
 import (
 	"fmt"
 
-
 	"github.com/spf13/cobra"
-
 )
 
 // getCmd represents the get command
@@ -36,8 +34,8 @@ var getCmd = &cobra.Command{
 
 Note: Don't forget to escape special characters (e.g. *, $, ", and ') with \ where needed`,
 	Run: func(cmd *cobra.Command, args []string) {
-        fmt.Printf("Search query: %v\n", args)
-        connection(args)
+		fmt.Printf("Search query: %v\n", args)
+		connection(args)
 	},
 }
 
@@ -55,7 +53,6 @@ func init() {
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
-
 
 //func connection(q []string) {
 //
@@ -143,7 +140,7 @@ func init() {
 //                }
 //                fmt.Printf("%s",l["log"])
 //            }
-//                
+//
 //            //for _, hit := range results.Hits.Hits {
 //            //    fmt.Println(*hit.Source)
 //            //}

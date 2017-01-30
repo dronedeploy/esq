@@ -32,7 +32,7 @@ const VERSION = "0.1.0"
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Displays the version",
-	Long: `Displays the version.`,
+	Long:  `Displays the version.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("esq version: " + VERSION)
 	},

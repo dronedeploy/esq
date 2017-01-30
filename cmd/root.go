@@ -17,7 +17,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-    "regexp"
+	"regexp"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,9 +36,9 @@ scanning through a long stream of logs, and doesn't integrate with
 the myriad cli tools available. Esq is an opinionated way to query 
 from the command line and pipe the output to other tools.
 `,
-// Uncomment the following line if your bare application
-// has an action associated with it:
-//	Run: func(cmd *cobra.Command, args []string) { },
+	// Uncomment the following line if your bare application
+	// has an action associated with it:
+	//	Run: func(cmd *cobra.Command, args []string) { },
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -66,20 +66,20 @@ func init() {
 
 // initConfig reads in config file and flags if set.
 func initConfig() {
-    var validFile = regexp.MustCompile(`^.*\.yml$`)
+	var validFile = regexp.MustCompile(`^.*\.yml$`)
 
 	if cfgFile != "" { // enable ability to specify config file via flag
-        if validFile.MatchString(cfgFile) {
-		    viper.SetConfigFile(cfgFile)
-        } else {
-            fmt.Println("Config file must use the '.yml' extension")
-            os.Exit(1)
-        }
+		if validFile.MatchString(cfgFile) {
+			viper.SetConfigFile(cfgFile)
+		} else {
+			fmt.Println("Config file must use the '.yml' extension")
+			os.Exit(1)
+		}
 	} else {
-	  viper.SetConfigName(".esq") // name of config file (without extension)
-	  viper.AddConfigPath("$HOME/")  // adding home directory as first search path
-	  //viper.AutomaticEnv()          // read in environment variables that match
-    }
+		viper.SetConfigName(".esq")   // name of config file (without extension)
+		viper.AddConfigPath("$HOME/") // adding home directory as first search path
+		//viper.AutomaticEnv()          // read in environment variables that match
+	}
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
@@ -88,5 +88,5 @@ func initConfig() {
 }
 
 func validateFlags() {
-    //TODO all the flags
+	//TODO all the flags
 }
