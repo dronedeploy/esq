@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+    "regexp"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -27,13 +28,13 @@ var cfgFile string
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "esq",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "A cli for querying elasticsearch",
+	Long: `
+Kibana is awesome as a search interface, but isn't that useful for 
+scanning through a long stream of logs, and doesn't integrate with 
+the myriad cli tools available. Esq is an opinionated way to query 
+from the command line and pipe the output to other tools.
+`,
 // Uncomment the following line if your bare application
 // has an action associated with it:
 //	Run: func(cmd *cobra.Command, args []string) { },
@@ -58,21 +59,28 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.esq.yaml)")
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" { // enable ability to specify config file via flag
-		viper.SetConfigFile(cfgFile)
-	}
+    var validFile = regexp.MustCompile(`^.*\.yml$`)
 
-	viper.SetConfigName(".esq") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")  // adding home directory as first search path
-	viper.AutomaticEnv()          // read in environment variables that match
+	if cfgFile != "" { // enable ability to specify config file via flag
+        if validFile.MatchString(cfgFile) {
+		    viper.SetConfigFile(cfgFile)
+        } else {
+            fmt.Println("Config file must use the '.yml' extension")
+            os.Exit(1)
+        }
+	} else {
+	  viper.SetConfigName(".esq") // name of config file (without extension)
+	  viper.AddConfigPath("$HOME/")  // adding home directory as first search path
+	  //viper.AutomaticEnv()          // read in environment variables that match
+    }
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println("Unable to read config file:", viper.ConfigFileUsed())
 	}
 }
