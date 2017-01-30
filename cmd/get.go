@@ -24,6 +24,7 @@ import (
 	"fmt"
     "context"
     "os"
+    "strings"
 
     "time"
 	"github.com/spf13/cobra"
@@ -41,9 +42,8 @@ var getCmd = &cobra.Command{
 Note: Don't forget to escape special characters (e.g. * and $) with \ where needed`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
-		fmt.Println("get called")
-        fmt.Printf("%v\n", args)
-        connection()
+        fmt.Printf("Search query: %v\n", args)
+        connection(args)
 	},
 }
 
@@ -63,7 +63,7 @@ func init() {
 }
 
 
-func connection() {
+func connection(q []string) {
 
     ctx := context.Background()
 
@@ -91,9 +91,34 @@ func connection() {
     }
 
     result, _ := client.Search().
-        Index("kinesis-2017.01.30").
-        Query(elastic.NewMatchAllQuery()).
+        Index(viper.GetString("index")).
+        Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
+        Sort(viper.GetString("timestamp"), false).
+        From(0).
         Size(1).
         Do(ctx)
-    fmt.Printf("Query took %d milliseconds ", result.TookInMillis)
+    //scroll := client.Scroll().
+    //    Index(viper.GetString("index")).
+    //    Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
+    //    Sort(viper.GetString("timestamp"), false).
+    //    From(0).
+    //    Size(1)
+
+    //pages := 0
+    //docs := 0
+
+    //for {
+    //    res, err := scroll.Do(ctx)
+    //    if err == io.EOF {
+    //        return nil // all results retrieved
+    //    }
+    //    if err != nil {
+    //            return err // something went wrong
+    //    }
+    //    
+
+        
+        
+    }
+    fmt.Printf("Query took %d milliseconds\n", result.TookInMillis)
 }
