@@ -26,10 +26,17 @@ import (
     "os"
     "strings"
 
+    "io"
+    
+    "encoding/json"
+
     "time"
 	"github.com/spf13/cobra"
     "github.com/spf13/viper"
     "gopkg.in/olivere/elastic.v5"
+
+    "golang.org/x/sync/errgroup"
+    "gopkg.in/cheggaaa/pb.v1"
     "log"
 )
 
@@ -39,9 +46,8 @@ var getCmd = &cobra.Command{
 	Short: "Get elasticsearch records",
 	Long: `Execute a query on elasticsearch.
 
-Note: Don't forget to escape special characters (e.g. * and $) with \ where needed`,
+Note: Don't forget to escape special characters (e.g. *, $, ", and ') with \ where needed`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
         fmt.Printf("Search query: %v\n", args)
         connection(args)
 	},
@@ -64,8 +70,6 @@ func init() {
 
 
 func connection(q []string) {
-
-    ctx := context.Background()
 
     url := viper.GetString("url")
     options := []elastic.ClientOptionFunc{
@@ -90,35 +94,95 @@ func connection(q []string) {
         log.Fatalf("Could not connect Elasticsearch client to %s: %s.", url, err)
     }
 
-    result, _ := client.Search().
-        Index(viper.GetString("index")).
-        Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
-        Sort(viper.GetString("timestamp"), false).
-        From(0).
-        Size(1).
-        Do(ctx)
-    //scroll := client.Scroll().
+    //result, _ := client.Search().
     //    Index(viper.GetString("index")).
     //    Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
     //    Sort(viper.GetString("timestamp"), false).
     //    From(0).
-    //    Size(1)
+    //    Size(1).
+    //    Do(context.Background())
+    //fmt.Printf("Query took %d milliseconds\n", result.TookInMillis)
 
-    //pages := 0
-    //docs := 0
-
-    //for {
-    //    res, err := scroll.Do(ctx)
-    //    if err == io.EOF {
-    //        return nil // all results retrieved
-    //    }
-    //    if err != nil {
-    //            return err // something went wrong
-    //    }
-    //    
-
-        
-        
+    // Count total and setup progress
+    total, err := client.Count().
+        Index(viper.GetString("index")).
+        Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
+        Do(context.Background())
+    if err != nil {
+        panic(err)
     }
-    fmt.Printf("Query took %d milliseconds\n", result.TookInMillis)
+    fmt.Printf("records: %d\n", total)
+
+    bar := pb.StartNew(int(total))
+
+    // 1st goroutine sends individual hits to channel.
+    hits := make(chan json.RawMessage)
+
+    g, ctx := errgroup.WithContext(context.Background())
+    g.Go(func() error {
+        defer close(hits)
+        // Initialize scroller. Just don't call Do yet.
+        scroll := client.Scroll().
+            Index(viper.GetString("index")).
+            Query(elastic.NewQueryStringQuery(strings.Join(q, " "))).
+            Sort(viper.GetString("timestamp"), false).
+            Size(1000)
+        for {
+            results, err := scroll.Do(ctx)
+            if err == io.EOF {
+                return nil // all results retrieved
+            }
+            if err != nil {
+                return err // something went wrong
+            }
+
+            // Send the hits to the hits channel
+            for _, hit := range results.Hits.Hits {
+                hits <- *hit.Source
+            }
+
+            // Check if we need to terminate early
+            select {
+            default:
+            case <-ctx.Done():
+                return ctx.Err()
+            }
+        }
+    })
+    // 2nd goroutine receives hits and deserializes them.
+    for i := 0; i < 10; i++ {
+        g.Go(func() error {
+            for _ = range hits {
+            //for hit := range hits {
+                //// Deserialize
+                //var p Product
+                //err := json.Unmarshal(hit, &p)
+                //if err != nil {
+                //    return err
+                //}
+
+                /// Do something with the product here, e.g. send it to another channel
+                /// for further processing.
+                //_ = p
+
+                bar.Increment()
+
+                // Terminate early?
+                select {
+                default:
+                case <-ctx.Done():
+                    return ctx.Err()
+                }
+            }
+            return nil
+        })
+    }
+
+    // Check whether any goroutines failed.
+    if err := g.Wait(); err != nil {
+        panic(err)
+    }
+
+    // Done.
+    bar.FinishPrint("Done")
 }
