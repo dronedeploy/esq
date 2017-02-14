@@ -34,10 +34,14 @@ var podlogCmd = &cobra.Command{
 A shortcut for getting log streams for kubernetes pods.
 Requres that your pods have a field called 'kubernetes.pod'`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Search query: %v\n", args)
-		q := make([]string, 1)
-		q[0] = "kubernetes.pod:'" + args[0] + "'"
-		connection(q, stream)
+		if len(args) != 1 {
+			fmt.Printf("must specify a single pod\n")
+		} else {
+			fmt.Printf("Search query: %v\n", args)
+			q := make([]string, 1)
+			q[0] = "kubernetes.pod:'" + args[0] + "'"
+			connection(q, stream)
+		}
 	},
 }
 
