@@ -21,6 +21,8 @@ After that you should see `esq` in `$GOPATH/bin`.
 
 To install `esq` using homebrew run the following:
 
+`brew update || brew update` #yes you have to update twice. This is a bug in brew itself.
+
 `brew tap astropuffin/tap`
 
 `brew install esq`
