@@ -191,13 +191,19 @@ func writeRecords(filename string, hits chan json.RawMessage, g *errgroup.Group,
 			}
 			for _, field := range fields {
 				if val, ok := l[field]; ok {
-					_, err = w.WriteString(val.(string) + " ")
+					switch val.(type) {
+					default:
+						_, err = w.WriteString(fmt.Sprintf("%v",val) + " ")
+					case float64:
+						_, err = w.WriteString(fmt.Sprintf("%f",val) + " ")
+					}
 					if err != nil {
 						fmt.Println("error writing to file")
 						break
 					}
 				}
 			}
+			w.WriteString("\n")
 
 			bar.Increment()
 
