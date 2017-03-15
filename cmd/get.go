@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -36,7 +37,7 @@ var getCmd = &cobra.Command{
 
 Note: Don't forget to escape special characters (e.g. *, $, ", and ') with \ where needed`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Search query: %v\n", args)
+		fmt.Fprintf(os.Stderr, "Search query: %v\n", args)
 		connection(args, stream)
 	},
 }

@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -37,9 +38,9 @@ Requres that your pods have a field called 'kubernetes.pod'`,
 		if len(args) != 1 {
 			fmt.Printf("must specify a single pod\n")
 		} else {
-			fmt.Printf("Search query: %v\n", args)
+			fmt.Fprintf(os.Stderr, "Search query: kubernetes.pod:\"%s\"\n", args[0])
 			q := make([]string, 1)
-			q[0] = "kubernetes.pod:'" + args[0] + "'"
+			q[0] = "kubernetes.pod:\"" + args[0] + "\""
 			connection(q, stream)
 		}
 	},
