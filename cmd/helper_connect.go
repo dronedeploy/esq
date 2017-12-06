@@ -170,13 +170,13 @@ func record2LogString(data []byte) (string, error) {
             }
         }
         if gotit {
-            var strval string
-            var ok bool
-            strval, ok = value.(string)
-            if ok {
-                parts = append(parts, strings.TrimSpace(strval))
-            } else {
+            switch value.(type) {
+ 			default:
                 parts = append(parts, fmt.Sprintf("%v", value))
+            case float64:
+                parts = append(parts, fmt.Sprintf("%f", value))
+            case string:
+                parts = append(parts, strings.TrimSpace(value))
             }
         }
     }
