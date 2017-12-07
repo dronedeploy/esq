@@ -17,6 +17,23 @@ Esq is written in go, so you'll need to [set up your go environment](https://gol
 This will automatically download, compile and install the tool.
 After that you should see `esq` in `$GOPATH/bin`.
 
+#### Install Using Hombrew (OSX)
+
+To install esq using homebrew run the following:
+
+`brew update || brew update` # yes you have to update twice. This is a bug in brew itself.
+
+`brew tap dronedeploy/tap`
+
+`brew install esq`
+
+*NOTE:* if you are getting an authentication error during `brew tap`, it may be because brew tries to use HTTPS instead of SSH to access github. To fix this, add the following two lines to your `~/.gitconfig` file:
+
+```
+[url "git@github.com:"]
+    insteadOf = "https://github.com/"
+```
+
 
 #### Configuring
 
