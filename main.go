@@ -20,7 +20,7 @@
 
 package main
 
-import "github.com/astropuffin/esq/cmd"
+import "github.com/dronedeploy/esq/cmd"
 
 func main() {
 	cmd.Execute()
