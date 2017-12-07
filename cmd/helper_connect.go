@@ -176,7 +176,7 @@ func record2LogString(data []byte) (string, error) {
 			case float64:
 				parts = append(parts, fmt.Sprintf("%f", value))
 			case string:
-				parts = append(parts, strings.TrimSpace(value))
+				parts = append(parts, strings.TrimSpace(value.(string)))
 			}
 		}
 	}
